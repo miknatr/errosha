@@ -1,0 +1,17 @@
+{
+    "name": "miknatr/errosha",
+    "authors": [
+        {
+            "name": "Mikhail Natarov",
+            "email": "miknatr@gmail.com"
+        }
+    ],
+    "require": {
+
+    },
+    "autoload": {
+        "psr-0": {
+            "Errosha\\": "src/"
+        }
+    }
+}
