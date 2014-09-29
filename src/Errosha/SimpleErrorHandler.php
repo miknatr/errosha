@@ -37,6 +37,7 @@ class SimpleErrorHandler
         if (defined('STDIN')) {
             die($msg . "\n");
         } elseif ($this->showErrors) {
+            header("HTTP/1.1 500 Internal server error");
             header('Content-Type: text/html; charset=UTF-8');
             die($msg . "\n");
         } else {
