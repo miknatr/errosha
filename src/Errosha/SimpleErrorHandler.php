@@ -37,12 +37,18 @@ class SimpleErrorHandler
         if (defined('STDIN')) {
             fwrite(STDERR, $msg . "\n");
             exit(1);
-        } elseif ($this->showErrors) {
-            header("HTTP/1.1 500 Internal server error");
-            header('Content-Type: text/html; charset=UTF-8');
-            die($msg . "\n");
         } else {
-            die("Internal server error\n");
+            $msg .= ', ' . $_SERVER['REQUEST_METHOD'] . ' '
+                . ($_SERVER['HTTPS'] ? 'https://' : 'http://') . $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT']
+                . $_SERVER['REQUEST_URI']
+            ;
+            if ($this->showErrors) {
+                header("HTTP/1.1 500 Internal server error");
+                header('Content-Type: text/html; charset=UTF-8');
+                die($msg . "\n");
+            } else {
+                die("Internal server error\n");
+            }
         }
 
     }
