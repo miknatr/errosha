@@ -39,7 +39,7 @@ class SimpleErrorHandler
             exit(1);
         } else {
             $msg .= ', ' . $_SERVER['REQUEST_METHOD'] . ' '
-                . ($_SERVER['HTTPS'] ? 'https://' : 'http://') . $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT']
+                . ((empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') ? 'http://' : 'https://') . $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT']
                 . $_SERVER['REQUEST_URI']
             ;
             if ($this->showErrors) {
