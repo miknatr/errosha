@@ -30,7 +30,7 @@ class SimpleErrorHandler
 
         $dt  = date('Y-m-d H:i:s');
         $level = self::codeToString($code);
-        $msg = "[$dt] $level: $str in $file:$line";
+        $msg = "[$dt] $level: $str in $file:$line\n";
 
         file_put_contents($this->errorLog, $msg, FILE_APPEND);
 
