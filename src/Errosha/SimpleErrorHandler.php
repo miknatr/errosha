@@ -4,7 +4,7 @@ namespace Errosha;
 
 class SimpleErrorHandler
 {
-    protected $errorLog;
+    protected $logger;
     protected $memoryForFatalErrorHandling;
     protected $showErrors;
 
@@ -16,9 +16,33 @@ class SimpleErrorHandler
     protected $chmod = null;
     protected $chgrp = null;
 
-    public function __construct($errorLog, $showErrors = true)
+    public function __construct($errorLogFilenameOrLoggerClosure, $showErrors = true)
     {
-        $this->errorLog = $errorLog;
+        if (is_string($errorLogFilenameOrLoggerClosure)) {
+            $filename = $errorLogFilenameOrLoggerClosure;
+
+            $this->logger = function($msg) use ($filename) {
+                $dt = date('Y-m-d H:i:s');
+                file_put_contents($filename, "[$dt] $msg\n", FILE_APPEND);
+
+                if ($this->chmod !== null && $this->chmod != (fileperms($filename) & 0777)) {
+                    $r = chmod($filename, $this->chmod);
+                    if (!$r) {
+                        file_put_contents($filename, "[$dt] Log problem: Can't set chgrp {$this->chgrp} on $filename\n", FILE_APPEND);
+                    }
+                }
+
+                if ($this->chgrp !== null && $this->chgrp != posix_getgrgid(filegroup($filename))['name']) {
+                    $r = chgrp($filename, $this->chgrp);
+                    if (!$r) {
+                        file_put_contents($filename, "[$dt] Log problem: Can't set chgrp {$this->chgrp} on $filename\n", FILE_APPEND);
+                    }
+                }
+            };
+        } else {
+            $this->logger = $errorLogFilenameOrLoggerClosure;
+        }
+
         $this->memoryForFatalErrorHandling = str_repeat(' ', 50 * 1024);
 
         // handle all errors
@@ -76,28 +100,7 @@ class SimpleErrorHandler
         $level = self::codeToString($code);
         $msg = "$level: $str in $file:$line";
 
-        if ($this->errorLog instanceof \Closure) {
-            call_user_func($this->errorLog, $msg);
-        } else {
-            $dt = date('Y-m-d H:i:s');
-            $filename = $this->errorLog;
-            file_put_contents($filename, "[$dt] $msg\n", FILE_APPEND);
-
-            if ($this->chmod !== null && $this->chmod != (fileperms($filename) & 0777)) {
-                $r = chmod($filename, $this->chmod);
-                if (!$r) {
-                    throw new \Exception("Can't set chgrp {$this->chgrp} on $filename");
-                }
-            }
-
-            if ($this->chgrp !== null && $this->chgrp != posix_getgrgid(filegroup($filename))['name']) {
-                $r = chgrp($filename, $this->chgrp);
-                if (!$r) {
-                    throw new \Exception("Can't set chgrp {$this->chgrp} on $filename");
-                }
-            }
-        }
-
+        call_user_func($this->logger, $msg);
 
         if (defined('STDIN')) {
             fwrite(STDERR, $msg . "\n");
