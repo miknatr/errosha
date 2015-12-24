@@ -2,11 +2,8 @@
 
 require __DIR__ . '/../bootstrap.php';
 
-$badLogger = function () {
-    $c = $d;
-};
-
 $errosha = new \Errosha\SimpleErrorHandler(__DIR__ . '/../test.log');
+$errosha->setIgnoreLevels(array(E_DEPRECATED));
 
-$a = null;
-$a->something();
+ereg('test', '');
+echo 'All right';

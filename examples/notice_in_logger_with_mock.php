@@ -6,6 +6,6 @@ $badLogger = function () {
     $c = $d;
 };
 
-$errosha = new \Errosha\SimpleErrorHandler($badLogger);
+$errosha = new \Errosha\SimpleErrorHandler($badLogger, false);
 
 $a = $b;

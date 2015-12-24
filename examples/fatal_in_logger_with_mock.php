@@ -6,7 +6,7 @@ $badLogger = function () {
     $c = $d;
 };
 
-$errosha = new \Errosha\SimpleErrorHandler(__DIR__ . '/../test.log');
+$errosha = new \Errosha\SimpleErrorHandler(__DIR__ . '/../test.log', false);
 
 $a = null;
 $a->something();

@@ -18,8 +18,10 @@ class SimpleErrorHandler
         $this->errorLog = $errorLog;
         $this->memoryForFatalErrorHandling = str_repeat(' ', 50 * 1024);
 
+        // handle all errors
         error_reporting(-1);
-        ini_set("display_errors", true);
+        // from that moment error handler outputs error messages and we can disable php display_errors
+        ini_set("display_errors", false);
 
         set_error_handler(array($this, 'handleError'));
         set_exception_handler(array($this, 'handleException'));
@@ -62,10 +64,8 @@ class SimpleErrorHandler
         if ($this->errorLog instanceof \Closure) {
             call_user_func($this->errorLog, $msg);
         } else {
-            $dt  = date('Y-m-d H:i:s');
-            $msg = "[$dt] $msg\n";
-
-            file_put_contents($this->errorLog, $msg, FILE_APPEND);
+            $dt = date('Y-m-d H:i:s');
+            file_put_contents($this->errorLog, "[$dt] $msg\n", FILE_APPEND);
         }
 
 
