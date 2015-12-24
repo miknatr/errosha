@@ -16,6 +16,8 @@ class SimpleErrorHandler
     protected $chmod = null;
     protected $chgrp = null;
 
+    protected $loggerErrors = array();
+
     public function __construct($errorLogFilenameOrLoggerClosure, $showErrors = true)
     {
         if (is_string($errorLogFilenameOrLoggerClosure)) {
@@ -28,14 +30,18 @@ class SimpleErrorHandler
                 if ($this->chmod !== null && $this->chmod != (fileperms($filename) & 0777)) {
                     $r = chmod($filename, $this->chmod);
                     if (!$r) {
-                        file_put_contents($filename, "[$dt] Log problem: Can't set chgrp {$this->chgrp} on $filename\n", FILE_APPEND);
+                        $chmodMsg = "[$dt] Log problem: Can't set chgrp {$this->chgrp} on $filename";
+                        $this->loggerErrors[] = $chmodMsg; // to show on echo state
+                        file_put_contents($filename, "$chmodMsg\n", FILE_APPEND);
                     }
                 }
 
                 if ($this->chgrp !== null && $this->chgrp != posix_getgrgid(filegroup($filename))['name']) {
                     $r = chgrp($filename, $this->chgrp);
                     if (!$r) {
-                        file_put_contents($filename, "[$dt] Log problem: Can't set chgrp {$this->chgrp} on $filename\n", FILE_APPEND);
+                        $chgrpMsg = "[$dt] Log problem: Can't set chgrp {$this->chgrp} on $filename";
+                        $this->loggerErrors[] = $chgrpMsg; // to show on echo state
+                        file_put_contents($filename, "$chgrpMsg\n", FILE_APPEND);
                     }
                 }
             };
@@ -115,6 +121,9 @@ class SimpleErrorHandler
 
             if ($this->showErrors) {
                 header('Content-Type: text/plain; charset=UTF-8');
+                if (count($this->loggerErrors) > 0) {
+                    echo join("\n", $this->loggerErrors) . "\n";
+                }
                 echo $msg;
             } else {
                 header($this->headerIfShowErrorOff);
