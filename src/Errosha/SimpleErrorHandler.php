@@ -97,7 +97,7 @@ class SimpleErrorHandler
         $this->handleError($e->getCode(), $e->getMessage(), $e->getFile(), $e->getLine());
     }
 
-    private static $fatalErrors = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
+    protected static $fatalErrors = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
     public function handleFatalError()
     {
         $this->memoryForFatalErrorHandling = null;
@@ -107,7 +107,7 @@ class SimpleErrorHandler
         }
     }
 
-    private static function codeToString($code)
+    protected static function codeToString($code)
     {
         switch ($code) {
             case E_ERROR:
