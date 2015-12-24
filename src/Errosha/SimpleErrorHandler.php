@@ -4,9 +4,14 @@ namespace Errosha;
 
 class SimpleErrorHandler
 {
-    private $errorLog;
-    private $memoryForFatalErrorHandling;
-    private $showErrors;
+    protected $errorLog;
+    protected $memoryForFatalErrorHandling;
+    protected $showErrors;
+
+    protected $ignoreLevels = array();
+
+    protected $headerIfShowErrorOff = 'Content-Type: text/plain; charset=UTF-8';
+    protected $bodyIfShowErrorOff = 'Internal server error';
 
     public function __construct($errorLog, $showErrors = true)
     {
@@ -19,7 +24,26 @@ class SimpleErrorHandler
         set_error_handler(array($this, 'handleError'));
         set_exception_handler(array($this, 'handleException'));
         register_shutdown_function(array($this, 'handleFatalError'));
+
         $this->showErrors = $showErrors;
+    }
+
+    public function setIgnoreLevels(array $levels)
+    {
+        $this->ignoreLevels = $levels;
+        return $this;
+    }
+
+    public function setHeaderIfShowErrorOff($header)
+    {
+        $this->headerIfShowErrorOff = $header;
+        return $this;
+    }
+
+    public function setBodyIfShowErrorOff($body)
+    {
+        $this->bodyIfShowErrorOff = $body;
+        return $this;
     }
 
     public function handleError($code, $str, $file, $line)
@@ -28,11 +52,22 @@ class SimpleErrorHandler
             return;
         }
 
-        $dt  = date('Y-m-d H:i:s');
-        $level = self::codeToString($code);
-        $msg = "[$dt] $level: $str in $file:$line\n";
+        if (in_array($code, $this->ignoreLevels)) {
+            return;
+        }
 
-        file_put_contents($this->errorLog, $msg, FILE_APPEND);
+        $level = self::codeToString($code);
+        $msg = "$level: $str in $file:$line";
+
+        if ($this->errorLog instanceof \Closure) {
+            call_user_func($this->errorLog, $msg);
+        } else {
+            $dt  = date('Y-m-d H:i:s');
+            $msg = "[$dt] $msg\n";
+
+            file_put_contents($this->errorLog, $msg, FILE_APPEND);
+        }
+
 
         if (defined('STDIN')) {
             fwrite(STDERR, $msg . "\n");
@@ -42,15 +77,19 @@ class SimpleErrorHandler
                 . ((empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') ? 'http://' : 'https://') . $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT']
                 . $_SERVER['REQUEST_URI']
             ;
-            if ($this->showErrors) {
-                header("HTTP/1.1 500 Internal server error");
-                header('Content-Type: text/html; charset=UTF-8');
-                die($msg . "\n");
-            } else {
-                die("Internal server error\n");
-            }
-        }
 
+            header("HTTP/1.1 500 Internal server error");
+
+            if ($this->showErrors) {
+                header('Content-Type: text/plain; charset=UTF-8');
+                echo $msg;
+            } else {
+                header($this->headerIfShowErrorOff);
+                echo $this->bodyIfShowErrorOff;
+            }
+
+            die;
+        }
     }
 
     public function handleException(\Exception $e)
