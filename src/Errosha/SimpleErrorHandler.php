@@ -13,6 +13,9 @@ class SimpleErrorHandler
     protected $headerIfShowErrorOff = 'Content-Type: text/plain; charset=UTF-8';
     protected $bodyIfShowErrorOff = 'Internal server error';
 
+    protected $chmod = null;
+    protected $chgrp = null;
+
     public function __construct($errorLog, $showErrors = true)
     {
         $this->errorLog = $errorLog;
@@ -48,6 +51,18 @@ class SimpleErrorHandler
         return $this;
     }
 
+    public function setLogChmod($chmod)
+    {
+        $this->chmod = $chmod;
+        return $this;
+    }
+
+    public function setLogChgrp($chgrp)
+    {
+        $this->chgrp = $chgrp;
+        return $this;
+    }
+
     public function handleError($code, $str, $file, $line)
     {
         if (!error_reporting()) { // если код хочет молча есть ошибки с помощью @, то мы ему поможем
@@ -65,7 +80,22 @@ class SimpleErrorHandler
             call_user_func($this->errorLog, $msg);
         } else {
             $dt = date('Y-m-d H:i:s');
-            file_put_contents($this->errorLog, "[$dt] $msg\n", FILE_APPEND);
+            $filename = $this->errorLog;
+            file_put_contents($filename, "[$dt] $msg\n", FILE_APPEND);
+
+            if ($this->chmod !== null && $this->chmod != (fileperms($filename) & 0777)) {
+                $r = chmod($filename, $this->chmod);
+                if (!$r) {
+                    throw new \Exception("Can't set chgrp {$this->chgrp} on $filename");
+                }
+            }
+
+            if ($this->chgrp !== null && $this->chgrp != posix_getgrgid(filegroup($filename))['name']) {
+                $r = chgrp($filename, $this->chgrp);
+                if (!$r) {
+                    throw new \Exception("Can't set chgrp {$this->chgrp} on $filename");
+                }
+            }
         }
 
 
