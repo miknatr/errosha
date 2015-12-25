@@ -30,8 +30,8 @@ class SimpleErrorHandler
                 if ($this->chmod !== null && $this->chmod != (fileperms($filename) & 0777)) {
                     $r = chmod($filename, $this->chmod);
                     if (!$r) {
-                        $chmodMsg = "[$dt] Log problem: Can't set chgrp {$this->chgrp} on $filename";
-                        $this->loggerErrors[] = $chmodMsg; // to show on echo state
+                        $chmodMsg = "Log problem: Can't set chgrp {$this->chgrp} on $filename";
+                        $this->loggerErrors[] = "[$dt] $chmodMsg"; // to show on echo state
                         file_put_contents($filename, "$chmodMsg\n", FILE_APPEND);
                     }
                 }
@@ -39,8 +39,8 @@ class SimpleErrorHandler
                 if ($this->chgrp !== null && $this->chgrp != posix_getgrgid(filegroup($filename))['name']) {
                     $r = chgrp($filename, $this->chgrp);
                     if (!$r) {
-                        $chgrpMsg = "[$dt] Log problem: Can't set chgrp {$this->chgrp} on $filename";
-                        $this->loggerErrors[] = $chgrpMsg; // to show on echo state
+                        $chgrpMsg = "Log problem: Can't set chgrp {$this->chgrp} on $filename";
+                        $this->loggerErrors[] = "[$dt] $chgrpMsg"; // to show on echo state
                         file_put_contents($filename, "$chgrpMsg\n", FILE_APPEND);
                     }
                 }
@@ -49,6 +49,7 @@ class SimpleErrorHandler
             $this->logger = $errorLogFilenameOrLoggerClosure;
         }
 
+        // reserve memory for fatal error handling
         $this->memoryForFatalErrorHandling = str_repeat(' ', 50 * 1024);
 
         // handle all errors
@@ -103,34 +104,25 @@ class SimpleErrorHandler
             return;
         }
 
-        $level = self::codeToString($code);
-        $msg = "$level: $str in $file:$line";
+        $logMsg = self::codeToString($code) . ": $str in $file:$line by " . static::getUrl();
 
-        call_user_func($this->logger, $msg);
+        call_user_func($this->logger, $logMsg);
 
         if (defined('STDIN')) {
-            fwrite(STDERR, $msg . "\n");
+            fwrite(STDERR, $this->getReadbleMsg($code, $str, $file, $line));
             exit(1);
         } else {
-            $msg .= ', ' . $_SERVER['REQUEST_METHOD'] . ' '
-                . ((empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') ? 'http://' : 'https://') . $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT']
-                . $_SERVER['REQUEST_URI']
-            ;
-
             header("HTTP/1.1 500 Internal server error");
 
             if ($this->showErrors) {
                 header('Content-Type: text/plain; charset=UTF-8');
-                if (count($this->loggerErrors) > 0) {
-                    echo join("\n", $this->loggerErrors) . "\n";
-                }
-                echo $msg;
+                echo $this->getReadbleMsg($code, $str, $file, $line);
             } else {
                 header($this->headerIfShowErrorOff);
                 echo $this->bodyIfShowErrorOff;
             }
 
-            die;
+            exit;
         }
     }
 
@@ -185,5 +177,39 @@ class SimpleErrorHandler
         }
 
         return 'Unknown error code';
+    }
+
+    protected static function getUrl()
+    {
+        if (defined('STDIN')) {
+            return 'CLI';
+        }
+
+        $insecure = empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off';
+        $port = $_SERVER['SERVER_PORT'];
+        $defaultPort = ($insecure && $port == 80) || (!$insecure && $port == 443);
+
+        return $_SERVER['REQUEST_METHOD'] . ' '
+                . ($insecure ? 'http://' : 'https://')
+                . $_SERVER['SERVER_NAME'] . ($defaultPort ? '' : ':' . $port)
+                . $_SERVER['REQUEST_URI']
+        ;
+    }
+
+    protected function getReadbleMsg($code, $str, $file, $line)
+    {
+        $r = '';
+        if (count($this->loggerErrors) > 0) {
+            $r .= "Log errors, fix first:\n";
+            $r .= join("\n", $this->loggerErrors) . "\n";
+            $r .= "\n";
+        }
+        $r .= self::codeToString($code) . "\n";
+        $r .= "Time: " . date('Y-m-d H:i:s') . "\n";
+        $r .= "Url: " . static::getUrl() . "\n";
+        $r .= "File: $file:$line\n";
+        $r .= "$str\n";
+
+        return $r;
     }
 }
