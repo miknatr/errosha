@@ -2,10 +2,7 @@
 
 require __DIR__ . '/../bootstrap.php';
 
-$badLogger = function () {
-    $c = $d;
-};
-
-$errosha = new \Errosha\SimpleErrorHandler($badLogger, false);
+$errosha = new \Errosha\ErrorHandler(new \Errosha\Display\ProductionDisplay());
+$errosha->addLogger(new \Errosha\Logger\LoggerWIthErrorIn());
 
 $a = $b;

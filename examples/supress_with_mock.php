@@ -2,7 +2,7 @@
 
 require __DIR__ . '/../bootstrap.php';
 
-$errosha = new \Errosha\SimpleErrorHandler(__DIR__ . '/../test.log', false);
+$errosha = new \Errosha\ErrorHandler(new \Errosha\Display\ProductionDisplay());
 
 @unserialize('blah');
 echo 'All right';
