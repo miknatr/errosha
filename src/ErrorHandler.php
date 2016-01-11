@@ -97,7 +97,7 @@ class ErrorHandler
 
         $trace = str_replace(array("\r\n", "\r", "\n"), ' ||| ', $trace); // newlines to |||
 
-        $logMsg = $codeText . ": $str in $file:$line via " . $url . ($this->logTrace ? '. TRACE: ' . $trace : '');
+        $logMsg = $codeText . ": $str in $file:$line via " . $url . ($this->logTrace ? ' ||| TRACE: ' . $trace : '');
 
         foreach ($this->loggers as $logger) {
             $this->callLogger($logger, $code, $logMsg);
