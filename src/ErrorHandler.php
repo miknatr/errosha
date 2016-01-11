@@ -17,6 +17,8 @@ class ErrorHandler
     /** @var DisplayInterface */
     protected $display;
 
+    protected $logTrace = true;
+
     public function __construct(DisplayInterface $display, $errorReporting = -1)
     {
         // reserve memory for fatal error handling
@@ -47,6 +49,12 @@ class ErrorHandler
         return $this;
     }
 
+    public function setLogTrace($logTrace)
+    {
+        $this->logTrace = $logTrace;
+        return $this;
+    }
+
     public function addLogger(LoggerInterface $logger)
     {
         $this->loggers[] = $logger;
@@ -55,7 +63,7 @@ class ErrorHandler
 
     public function handleException(\Exception $e)
     {
-        $this->handleErrorAndExit($e->getCode(), $e->getMessage(), $e->getFile(), $e->getLine(), true);
+        $this->handleErrorAndExit($e->getCode(), $e->getMessage(), $e->getFile(), $e->getLine(), $e->getTraceAsString(), true);
     }
 
     protected static $fatalErrors = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
@@ -64,7 +72,7 @@ class ErrorHandler
         $this->memoryForFatalErrorHandling = null;
         $lastError = error_get_last();
         if ($lastError && in_array($lastError['type'], self::$fatalErrors)) {
-            $this->handleErrorAndExit($lastError['type'], $lastError['message'], $lastError['file'], $lastError['line']);
+            $this->handleErrorAndExit($lastError['type'], $lastError['message'], $lastError['file'], $lastError['line'], (new \Exception)->getTraceAsString());
         }
     }
 
@@ -78,16 +86,18 @@ class ErrorHandler
             return;
         }
 
-        $this->handleErrorAndExit($code, $str, $file, $line);
+        $this->handleErrorAndExit($code, $str, $file, $line, (new \Exception)->getTraceAsString());
     }
 
-    public function handleErrorAndExit($code, $str, $file, $line, $isException = false)
+    public function handleErrorAndExit($code, $str, $file, $line, $trace = '', $isException = false)
     {
         $url = $this->getUrl();
 
         $codeText = $isException ? "EXCEPTION" . ($code ? "(code $code)" : '') : $this->codeToString($code);
 
-        $logMsg = $codeText . ": $str in $file:$line via " . $url;
+        $trace = str_replace(array("\r\n", "\r", "\n"), ' ||| ', $trace); // newlines to |||
+
+        $logMsg = $codeText . ": $str in $file:$line via " . $url . ($this->logTrace ? '. TRACE: ' . $trace : '');
 
         foreach ($this->loggers as $logger) {
             $this->callLogger($logger, $code, $logMsg);
