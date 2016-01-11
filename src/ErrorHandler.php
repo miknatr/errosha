@@ -114,6 +114,7 @@ class ErrorHandler
 
     protected function callLogger(LoggerInterface $logger, $code, $msg)
     {
+
         switch ($code) {
             case E_ERROR:
             case E_RECOVERABLE_ERROR:
@@ -138,9 +139,9 @@ class ErrorHandler
             case E_USER_DEPRECATED:
                 $logger->info($msg);
                 break;
+            default:
+                $logger->critical($msg);
         }
-
-        $logger->critical($msg);
     }
 
     protected function codeToString($code)
