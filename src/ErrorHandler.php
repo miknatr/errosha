@@ -93,11 +93,10 @@ class ErrorHandler
     {
         $url = $this->getUrl();
 
-        $codeText = $isException ? "EXCEPTION" . ($code ? "(code $code)" : '') : $this->codeToString($code);
+        $codeText = $isException ? 'EXCEPTION' . ($code ? "(code $code)" : '') : $this->codeToString($code);
 
-        $trace = str_replace(array("\r\n", "\r", "\n"), ' ||| ', $trace); // newlines to |||
-
-        $logMsg = $codeText . ": $str in $file:$line via " . $url . ($this->logTrace ? ' ||| TRACE: ' . $trace : '');
+        $logMsg = $codeText . ": $str in $file:$line via " . $url . ($this->logTrace ? ', TRACE: ' . $trace : '');
+        $logMsg = $this->escapeNewLines($logMsg);
 
         foreach ($this->loggers as $logger) {
             $this->callLogger($logger, $code, $logMsg);
@@ -107,9 +106,14 @@ class ErrorHandler
             fwrite(STDERR, $logMsg);
             exit(1);
         } else {
-            $this->display->showError($code, $str, $file, $line, $codeText, $url);
+            $this->display->showError($code, $str, $file, $line, $codeText, $url, $trace);
             exit;
         }
+    }
+
+    protected function escapeNewLines($str)
+    {
+        return str_replace(array("\r\n", "\r", "\n"), ' ||| ', $str);
     }
 
     protected function callLogger(LoggerInterface $logger, $code, $msg)
