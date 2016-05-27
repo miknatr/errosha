@@ -61,8 +61,9 @@ class ErrorHandler
         return $this;
     }
 
-    public function handleException(\Exception $e)
+    public function handleException($e)
     {
+        /** @var \Exception|\Throwable $e */
         $this->handleErrorAndExit($e->getCode(), $e->getMessage(), $e->getFile(), $e->getLine(), $e->getTraceAsString(), true);
     }
 
